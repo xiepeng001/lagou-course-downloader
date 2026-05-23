@@ -127,7 +127,7 @@ function renderTreeNode(node, courseId) {
         let html = `<div class="tree-node tree-group level-${node.level}" style="padding-left:${indent}px">
             ${expandBtn}
             <input type="checkbox" class="tree-check" id="${nodeId}" data-node-id="${nodeId}" onchange="treeCheck(this)">
-            <label for="${nodeId}">
+            <label for="${nodeId}" onclick="event.preventDefault(); var cb=document.getElementById('${nodeId}'); cb.checked=!cb.checked; treeCheck(cb);">
                 <span class="tree-group-name">${node.name}</span>
                 ${progressText}
             </label>
