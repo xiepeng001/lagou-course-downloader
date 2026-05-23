@@ -16,6 +16,7 @@ Thumbs.db
 
 # Project specific
 mp4.txt
+src/main/resources/config/config.properties
 
 # Sensitive config - only commit template
 # (config.properties itself is committed with empty values)

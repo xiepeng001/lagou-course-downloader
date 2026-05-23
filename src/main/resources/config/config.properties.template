@@ -1,0 +1,29 @@
+# Copy cookie from browser request headers after login.
+cookie=
+
+# Download type: 0=video, 1=article, 3=both
+downloadType=3
+
+# Default course output directory
+mp4_dir=~/Downloads/lagou-courses
+
+# Xunlianying output directory
+mp4_xunlianying_dir=~/Downloads/lagou-xunlianying-mp4
+
+# Optional include list, comma-separated. Empty means interactive selection.
+courseIds=
+
+# Exclude list, comma-separated
+remove_course=
+
+# MP4 download timeout in minutes
+mp4_download_timeout=10
+
+# HTTP request timeout in milliseconds
+http_timeout_ms=30000
+
+# Generic API retry count
+api_retry_count=10
+
+# Retry count for week lessons when state=1002 GENERAL
+week_general_retry_count=10
