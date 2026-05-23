@@ -128,7 +128,7 @@ function renderTreeNode(node, courseId) {
         return html;
     } else {
         return `<div class="tree-node tree-leaf level-${node.level}" style="padding-left:${indent + 22}px">
-            <input type="checkbox" class="tree-check" id="${nodeId}" data-lesson-id="${node.id}" data-course-id="${courseId}" ${node.downloaded ? 'data-downloaded="true"' : ''} onchange="leafCheck(this)">
+            <input type="checkbox" class="tree-check leaf-check" id="${nodeId}" data-lesson-id="${node.id}" data-course-id="${courseId}" ${node.downloaded ? 'data-downloaded="true"' : ''} onchange="leafCheck(this)">
             <label for="${nodeId}">
                 <span class="tree-leaf-name">${node.name}</span>
                 <span class="tree-leaf-type">${node.type || ''}</span>
@@ -151,18 +151,15 @@ function treeToggle(btn) {
     }
 }
 
-// Group checkbox: toggle all descendant leaf checkboxes
+// Group checkbox: toggle all descendant checkboxes
 function treeCheck(cb) {
     const groupNode = cb.closest('.tree-node');
     const children = groupNode.nextElementSibling;
     if (!children || !children.classList.contains('tree-children')) return;
-    const leaves = children.querySelectorAll('.tree-leaf .tree-check');
-    leaves.forEach(lc => lc.checked = cb.checked);
-    // Also check sub-groups
-    const subGroups = children.querySelectorAll('.tree-group > .tree-check');
-    subGroups.forEach(gc => {
-        gc.checked = cb.checked;
-        gc.dispatchEvent(new Event('change'));
+    // Check all checkboxes inside (both groups and leaves)
+    children.querySelectorAll('.tree-check').forEach(lc => {
+        lc.checked = cb.checked;
+        lc.dispatchEvent(new Event('change', {bubbles: false}));
     });
 }
 
@@ -170,16 +167,20 @@ function treeCheck(cb) {
 function leafCheck(cb) {
     const childrenContainer = cb.closest('.tree-children');
     if (!childrenContainer) return;
-    const allLeaves = childrenContainer.querySelectorAll(':scope > .tree-leaf .tree-check');
     const parentCheck = childrenContainer.previousElementSibling?.querySelector('.tree-check');
-    if (parentCheck && allLeaves.length > 0) {
-        parentCheck.checked = [...allLeaves].every(l => l.checked);
+    if (!parentCheck) return;
+    const allChecks = childrenContainer.querySelectorAll(':scope > .tree-node > .tree-check');
+    if (allChecks.length === 0) return;
+    parentCheck.checked = [...allChecks].every(l => l.checked);
+    // Recursively update grandparent
+    const grandChildren = childrenContainer.parentElement?.closest('.tree-children');
+    if (grandChildren) {
+        const grandCheck = grandChildren.previousElementSibling?.querySelector('.tree-check');
+        if (grandCheck) {
+            const siblingChecks = grandChildren.querySelectorAll(':scope > .tree-node > .tree-check');
+            grandCheck.checked = [...siblingChecks].every(l => l.checked);
+        }
     }
-}
-
-// Collect all selected lesson IDs (leaf nodes only)
-function getSelectedLessonIds() {
-    return [...document.querySelectorAll('.tree-leaf .tree-check:checked')].map(cb => cb.dataset.lessonId);
 }
 
 function toggleAll(el) {
@@ -201,15 +202,19 @@ function selectUndownloaded() {
 async function startDownload() {
     // Collect from course-level checkboxes
     const courseIds = [...document.querySelectorAll('.course-check:checked')].map(cb => cb.value);
-    // Collect from lesson-level checkboxes
-    const lessonIds = getSelectedLessonIds();
+    // Collect from lesson-level checkboxes with their courseId
+    const leafChecks = document.querySelectorAll('.leaf-check:checked');
+    const lessonIds = [...leafChecks].map(cb => cb.dataset.lessonId);
+    // Auto-collect courseIds from selected lessons
+    const lessonCourseIds = [...leafChecks].map(cb => cb.dataset.courseId);
+    const allCourseIds = [...new Set([...courseIds, ...lessonCourseIds])];
 
-    if (courseIds.length === 0 && lessonIds.length === 0) { alert('请先选择课程或课时'); return; }
+    if (allCourseIds.length === 0) { alert('请先选择课程或课时'); return; }
 
     await fetch('/api/download', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({courseIds, lessonIds})
+        body: JSON.stringify({courseIds: allCourseIds, lessonIds: lessonIds})
     });
 
     document.getElementById('progressPanel').style.display = 'block';
