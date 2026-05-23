@@ -8,6 +8,7 @@ target/
 .vscode/
 .idea/
 *.iml
+.claude/
 
 # OS files
 .DS_Store
