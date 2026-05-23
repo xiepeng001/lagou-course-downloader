@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拉勾课程下载器</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>拉勾课程下载器</h1>
+
+    <div class="config-panel">
+        <div class="form-row">
+            <label>Cookie:</label>
+            <input type="text" id="cookie" th:value="${cookie}" placeholder="从浏览器复制 Cookie 粘贴到这里">
+            <button onclick="saveConfig()">保存</button>
+        </div>
+        <div class="form-row">
+            <label>下载目录:</label>
+            <input type="text" id="mp4Dir" th:value="${mp4Dir}" style="width:400px">
+        </div>
+        <div class="form-row">
+            <label>下载类型:</label>
+            <select id="downloadType">
+                <option value="0" th:selected="${downloadType == '0'}">仅视频</option>
+                <option value="1" th:selected="${downloadType == '1'}">仅文章</option>
+                <option value="3" th:selected="${downloadType == '3'}">视频+文章</option>
+            </select>
+            <button onclick="loadCourses()">刷新课程列表</button>
+        </div>
+    </div>
+
+    <div class="course-panel">
+        <div class="toolbar">
+            <button onclick="selectAll()">全选</button>
+            <button onclick="invertSelect()">反选</button>
+            <button onclick="selectUndownloaded()">仅选未下载</button>
+            <button class="btn-primary" onclick="startDownload()">下载选中课程</button>
+        </div>
+        <table id="courseTable">
+            <thead>
+            <tr>
+                <th><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+                <th>#</th>
+                <th>课程名称</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>大小</th>
+            </tr>
+            </thead>
+            <tbody id="courseBody">
+            <tr><td colspan="6" class="empty">点击「刷新课程列表」加载</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="progress-panel" id="progressPanel" style="display:none">
+        <h2>下载进度</h2>
+        <div id="progressList"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

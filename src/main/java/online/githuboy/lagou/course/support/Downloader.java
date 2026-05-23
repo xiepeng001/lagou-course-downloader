@@ -67,6 +67,12 @@ public class Downloader {
     private DownloadType downloadType = DownloadType.VIDEO;
     @Setter
     private Predicate<CourseInfo.Lesson> debugFilter = lesson -> true;
+    @Setter
+    private ProgressCallback progressCallback;
+
+    public interface ProgressCallback {
+        void onProgress(String courseId, int completed, int total);
+    }
 
     public Downloader(String courseId, String savePath) {
         this.courseId = courseId;
@@ -266,6 +272,10 @@ public class Downloader {
             ExecutorService.getExecutor().execute(loader);
         }
         all.await();
+
+        if (progressCallback != null) {
+            progressCallback.onProgress(courseId, mediaLoadersSize, i);
+        }
 
         long end = System.currentTimeMillis();
         log.info("《{}》所有视频处理耗时:{} s", courseName, (end - start) / 1000);

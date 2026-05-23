@@ -25,6 +25,11 @@ public class ConfigUtil {
         return value == null ? defaultValue : value;
     }
 
+    public static void setValue(String key, String value) {
+        settings.set(key, value);
+        settings.store();
+    }
+
     public static void addDelCourse(String courseId) {
         String removeCourseStr = readValue("remove_course");
         String[] splitStr = StringUtils.split(removeCourseStr, ",");
