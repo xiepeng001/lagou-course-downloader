@@ -31,6 +31,9 @@ public class HttpAPI {
     private final static String COURSE_INFO_API = "https://gate.lagou.com/v1/neirong/kaiwu/getCourseLessons?courseId={0}";
     private final static String COURSE_COMMENT_LIST_API = "https://gate.lagou.com/v1/neirong/course/comment/getCourseCommentList?courseId={0}&lessonId={1}&pageNum={2}&needCount=true";
     private final static String PURCHASED_COURSE_API = "https://gate.lagou.com/v1/neirong/kaiwu/getAllCoursePurchasedRecordForPC?t={0}";
+    private final static String BIG_COURSE_OUTLINE_API = "https://gate.lagou.com/v1/neirong/edu/bigcourse/getCourseOutline?courseId={0}";
+    private final static String BIG_COURSE_STAGE_WEEKS_API = "https://gate.lagou.com/v1/neirong/edu/bigcourse/getStageWeeks?courseId={0}&stageId={1}";
+    private final static String BIG_COURSE_WEEK_LESSONS_API = "https://gate.lagou.com/v1/neirong/edu/bigcourse/getWeekLessons?courseId={0}&weekId={1}";
 
     public static CourseInfo getCourseInfo(String courseId) {
         String url = MessageFormat.format(COURSE_INFO_API, courseId);
@@ -232,5 +235,20 @@ public class HttpAPI {
             }
         }
         return record;
+    }
+
+    public static String getBigCourseOutline(String courseId) {
+        String url = MessageFormat.format(BIG_COURSE_OUTLINE_API, courseId);
+        return HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+    }
+
+    public static String getStageWeeks(String courseId, String stageId) {
+        String url = MessageFormat.format(BIG_COURSE_STAGE_WEEKS_API, courseId, stageId);
+        return HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
+    }
+
+    public static String getWeekLessons(String courseId, String weekId) {
+        String url = MessageFormat.format(BIG_COURSE_WEEK_LESSONS_API, courseId, weekId);
+        return HttpUtils.get(url, CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
     }
 }

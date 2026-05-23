@@ -7,4 +7,6 @@ spring:
 
 logging:
   level:
+    root: WARN
     online.githuboy.lagou.course: INFO
+    org.springframework.boot: WARN

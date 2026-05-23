@@ -30,6 +30,14 @@ td { font-size: 14px; }
 .status-partial { color: #faad14; font-weight: 500; }
 .status-not { color: #999; }
 
+.expand-btn { cursor: pointer; user-select: none; margin-right: 6px; font-size: 10px; display: inline-block; width: 14px; text-align: center; color: #999; }
+.expand-btn:hover { color: #1677ff; }
+.lesson-container { padding: 0 !important; }
+.lesson-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0; }
+.lesson-table th { background: #f5f7fa; padding: 6px 10px; font-size: 12px; }
+.lesson-table td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; }
+.lesson-loading { padding: 10px; color: #999; font-size: 13px; }
+
 .progress-item { margin-bottom: 12px; }
 .progress-bar-bg { background: #f0f0f0; border-radius: 4px; height: 20px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: #1677ff; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }

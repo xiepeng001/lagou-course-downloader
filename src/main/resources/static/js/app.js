@@ -18,21 +18,62 @@ async function loadCourses() {
 function renderTable() {
     const tbody = document.getElementById('courseBody');
     if (courses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty">没有找到课程</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">没有找到课程</td></tr>';
         return;
     }
-    tbody.innerHTML = courses.map((c, i) => {
-        const statusClass = c.status === '已下载' ? 'status-downloaded'
-            : c.status === '部分' ? 'status-partial' : 'status-not';
-        return `<tr>
+    tbody.innerHTML = courses.map((c, i) => `
+        <tr class="course-row" data-course-id="${c.courseId}" data-course-type="${c.type}">
             <td><input type="checkbox" class="course-check" value="${c.courseId}" data-status="${c.status}"></td>
             <td>${i + 1}</td>
-            <td>${c.courseName}</td>
+            <td>
+                <span class="expand-btn" onclick="toggleLessons('${c.courseId}', '${c.type}', this)">&#9654;</span>
+                ${c.courseName}
+            </td>
             <td>${c.type}</td>
-            <td class="${statusClass}">${c.status}</td>
+            <td class="${c.status === '已下载' ? 'status-downloaded' : c.status === '部分' ? 'status-partial' : 'status-not'}">${c.status}</td>
             <td>${c.localSize}</td>
-        </tr>`;
-    }).join('');
+        </tr>
+        <tr class="lesson-row" id="lessons-${c.courseId}" style="display:none">
+            <td colspan="6" class="lesson-container"><div class="lesson-loading">加载中...</div></td>
+        </tr>
+    `).join('');
+}
+
+async function toggleLessons(courseId, courseType, btn) {
+    const lessonRow = document.getElementById('lessons-' + courseId);
+    if (lessonRow.style.display !== 'none') {
+        lessonRow.style.display = 'none';
+        btn.innerHTML = '&#9654;';
+        return;
+    }
+
+    lessonRow.style.display = '';
+    btn.innerHTML = '&#9660;';
+
+    const container = lessonRow.querySelector('.lesson-container');
+    if (container.querySelector('.lesson-loaded')) return;
+
+    try {
+        const res = await fetch(`/api/courses/${courseId}/lessons?courseType=${encodeURIComponent(courseType)}`);
+        const lessons = await res.json();
+        if (lessons.length === 0) {
+            container.innerHTML = '<div class="lesson-loaded" style="padding:8px;color:#999">暂无课时信息</div>';
+            return;
+        }
+        container.innerHTML = `<div class="lesson-loaded">
+            <table class="lesson-table">
+                <thead><tr><th>课时名称</th><th>类型</th><th>状态</th><th>已下载</th></tr></thead>
+                <tbody>${lessons.map(l => `<tr>
+                    <td>${l.lessonName}</td>
+                    <td>${l.type}</td>
+                    <td>${l.status}</td>
+                    <td>${l.downloaded ? '✓' : '—'}</td>
+                </tr>`).join('')}</tbody>
+            </table>
+        </div>`;
+    } catch (e) {
+        container.innerHTML = '<div class="lesson-loaded" style="padding:8px;color:#ff4d4f">加载失败</div>';
+    }
 }
 
 function toggleAll(el) {

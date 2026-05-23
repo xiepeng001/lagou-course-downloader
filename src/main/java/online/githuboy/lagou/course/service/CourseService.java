@@ -2,10 +2,20 @@ package online.githuboy.lagou.course.service;
 
 import cn.hutool.core.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
+import online.githuboy.lagou.course.domain.CourseInfo;
 import online.githuboy.lagou.course.domain.PurchasedCourseRecord;
+import online.githuboy.lagou.course.pojo.vo.CourseDayInfoVo;
+import online.githuboy.lagou.course.pojo.vo.CourseStageVo;
+import online.githuboy.lagou.course.pojo.vo.LessonInfoVo;
+import online.githuboy.lagou.course.pojo.vo.StageModuleVo;
 import online.githuboy.lagou.course.request.HttpAPI;
 import online.githuboy.lagou.course.utils.ConfigUtil;
+import online.githuboy.lagou.course.utils.FileUtils;
 import online.githuboy.lagou.course.web.dto.CourseListItem;
+import online.githuboy.lagou.course.web.dto.LessonItem;
+import online.githuboy.lagou.course.support.BigCourseProgressStore;
+import online.githuboy.lagou.course.support.Mp4History;
+import online.githuboy.lagou.course.constants.ResourceType;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -79,5 +89,111 @@ public class CourseService {
         int exp = (int) (Math.log(bytes) / Math.log(1024));
         char unit = "KMGTPE".charAt(exp - 1);
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), unit);
+    }
+
+    /**
+     * 获取课程课时列表（专栏或训练营）
+     */
+    public List<LessonItem> getCourseLessons(String courseId, String courseType) {
+        if ("训练营".equals(courseType)) {
+            return getTrainingCampLessons(courseId);
+        } else {
+            return getColumnLessons(courseId);
+        }
+    }
+
+    private List<LessonItem> getColumnLessons(String courseId) {
+        List<LessonItem> items = new ArrayList<>();
+        CourseInfo courseInfo = HttpAPI.getCourseInfo(courseId);
+        if (courseInfo.getCourseSectionList() == null) return items;
+
+        String savePath = ConfigUtil.readValue("mp4_dir");
+        String courseName = courseInfo.getCourseName();
+
+        for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
+            if (section.getCourseLessons() == null) continue;
+            for (CourseInfo.Lesson lesson : section.getCourseLessons()) {
+                LessonItem item = new LessonItem();
+                item.setLessonId(lesson.getId() + "");
+                item.setLessonName(lesson.getTheme());
+                item.setStatus("RELEASE".equals(lesson.getStatus()) ? "已发布" : "未发布");
+
+                boolean hasVideo = lesson.getVideoMediaDTO() != null && lesson.getVideoMediaDTO().getFileId() != null;
+                boolean hasText = lesson.getTextContent() != null || lesson.getTextUrl() != null;
+                if (hasVideo && hasText) {
+                    item.setType("视频+文章");
+                } else if (hasVideo) {
+                    item.setType("视频");
+                } else if (hasText) {
+                    item.setType("文章");
+                } else {
+                    item.setType("—");
+                }
+
+                String lessonName = FileUtils.getCorrectFileName(lesson.getTheme());
+                String mp4Path = String.join(File.separator, savePath,
+                        courseId + "_" + courseName,
+                        "[" + lesson.getId() + "] " + lessonName + ".mp4");
+                item.setDownloaded(FileUtil.exist(mp4Path));
+
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    private List<LessonItem> getTrainingCampLessons(String courseId) {
+        List<LessonItem> items = new ArrayList<>();
+        try {
+            String savePath = ConfigUtil.readValue("mp4_xunlianying_dir");
+            BigCourseProgressStore.init(savePath);
+
+            com.alibaba.fastjson2.JSONObject outlineResp = com.alibaba.fastjson2.JSONObject.parseObject(
+                    HttpAPI.getBigCourseOutline(courseId));
+            if (outlineResp.getInteger("state") != 1) return items;
+
+            com.alibaba.fastjson2.JSONArray stageVos = outlineResp.getJSONObject("content").getJSONArray("courseStageVos");
+            if (stageVos == null) return items;
+            List<CourseStageVo> stages = stageVos.toJavaList(CourseStageVo.class);
+
+            for (CourseStageVo stage : stages) {
+                String stageWeeksResp = HttpAPI.getStageWeeks(courseId, stage.getStageId().toString());
+                com.alibaba.fastjson2.JSONObject weeksJson = com.alibaba.fastjson2.JSONObject.parseObject(stageWeeksResp);
+                if (weeksJson.getInteger("state") != 1) continue;
+                com.alibaba.fastjson2.JSONArray moduleArray = weeksJson.getJSONArray("content");
+                if (moduleArray == null) continue;
+                List<StageModuleVo> modules = moduleArray.toJavaList(StageModuleVo.class);
+
+                for (StageModuleVo module : modules) {
+                    String weekResp = HttpAPI.getWeekLessons(courseId, module.getWeekId().toString());
+                    com.alibaba.fastjson2.JSONObject weekJson = com.alibaba.fastjson2.JSONObject.parseObject(weekResp);
+                    if (weekJson.getInteger("state") != 1) continue;
+                    com.alibaba.fastjson2.JSONObject weekContent = weekJson.getJSONObject("content");
+                    if (weekContent == null) continue;
+                    com.alibaba.fastjson2.JSONArray dayArray = weekContent.getJSONArray("courseDayInfoVos");
+                    if (dayArray == null) continue;
+                    List<CourseDayInfoVo> days = dayArray.toJavaList(CourseDayInfoVo.class);
+
+                    for (CourseDayInfoVo day : days) {
+                        if (day.getLessonInfoVos() == null) continue;
+                        for (LessonInfoVo lesson : day.getLessonInfoVos()) {
+                            if (lesson == null) continue;
+                            LessonItem item = new LessonItem();
+                            item.setLessonId(lesson.getLessonId().toString());
+                            item.setLessonName(stage.getStageName() + " / " + module.getWeekName() + " / " + lesson.getLessonName());
+                            item.setStatus("—");
+                            item.setType(ResourceType.MEDIA.equals(lesson.getType()) ? "视频" :
+                                    ResourceType.RESOURCE.equals(lesson.getType()) ? "资料" : "—");
+                            item.setDownloaded(BigCourseProgressStore.isCompleted(
+                                    lesson.getLessonId().toString(), lesson.getType()));
+                            items.add(item);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("获取训练营课时失败: {}", e.getMessage());
+        }
+        return items;
     }
 }

@@ -6,6 +6,7 @@ import online.githuboy.lagou.course.service.DownloadService;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.web.dto.CourseListItem;
 import online.githuboy.lagou.course.web.dto.DownloadProgress;
+import online.githuboy.lagou.course.web.dto.LessonItem;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,6 +44,13 @@ public class CourseController {
     @ResponseBody
     public List<CourseListItem> getCourses() {
         return courseService.getCourseList();
+    }
+
+    @GetMapping("/api/courses/{courseId}/lessons")
+    @ResponseBody
+    public List<LessonItem> getCourseLessons(@PathVariable String courseId,
+                                              @RequestParam String courseType) {
+        return courseService.getCourseLessons(courseId, courseType);
     }
 
     @PostMapping("/api/download")
