@@ -1,4 +1,4 @@
-﻿package online.githuboy.lagou.course.support;
+package online.githuboy.lagou.course.support;
 
 import online.githuboy.lagou.course.utils.ConfigUtil;
 

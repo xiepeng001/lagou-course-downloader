@@ -3,8 +3,8 @@ package online.githuboy.lagou.course;
 import cn.hutool.core.codec.Base64;
 import online.githuboy.lagou.course.decrypt.alibaba.AliyunApiUtils;
 import online.githuboy.lagou.course.decrypt.alibaba.EncryptUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import static online.githuboy.lagou.course.decrypt.alibaba.EncryptUtils.decrypt;
 
@@ -41,7 +41,7 @@ public class EncryptTest {
         System.out.println(s1 + "\n" + s2);
         System.out.println("R1:" + r1);
         System.out.println("R2:" + r2);
-        Assert.assertEquals("r1 not equals r2", r1, r2);
+        Assertions.assertEquals(r1, r2, "r1 not equals r2");
     }
 
 }

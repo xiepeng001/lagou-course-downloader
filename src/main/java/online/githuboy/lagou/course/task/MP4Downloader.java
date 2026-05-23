@@ -90,7 +90,7 @@ public class MP4Downloader extends AbstractRetryTask implements NamedTask, Media
                 }
 
                 @Override
-                public void progress(long l) {
+                public void progress(long progressSize, long totalSize) {
                 }
 
                 @Override

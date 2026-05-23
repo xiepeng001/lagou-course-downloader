@@ -1,12 +1,7 @@
 package online.githuboy.lagou.course;
 
-import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import lombok.SneakyThrows;
-import online.githuboy.lagou.course.support.CookieStore;
-import online.githuboy.lagou.course.utils.HttpUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -52,21 +47,5 @@ public class AliyunApiUtilsTest {
         byte[] bytes = hmacSHA1Signature("BiCJzqCgoSbpZDYdsgnAnANSNXnswGNXpSqrjuL1XQoL", stringToSign);
         String s = newStringByBase64(bytes);
         System.out.println(1);
-    }
-
-
-    @Test
-    @SneakyThrows
-    public void testFullRequest() {
-        String body = HttpUtils.get("https://gate.lagou.com/v1/neirong/kaiwu/getLessonPlayHistory?lessonId=5324&isVideo=true", CookieStore.getCookie()).header("x-l-req-header", "{deviceType:1}").execute().body();
-        JSONObject jsonObject = JSON.parseObject(body);
-//        System.out.println(body);
-        if (jsonObject.getInteger("state") != 1) throw new RuntimeException(body);
-        String aliPlayAuth = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("aliPlayAuth");
-        String fileId = jsonObject.getJSONObject("content").getJSONObject("mediaPlayInfoVo").getString("fileId");
-        String api = getPlayInfoRequestUrl(aliPlayAuth, fileId);
-        String body1 = HttpRequest.get(api).execute().body();
-//        System.out.println(api);
-        System.out.println("\n\nAPI request result:\n" + body1);
     }
 }

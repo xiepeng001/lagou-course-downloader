@@ -1,7 +1,7 @@
 package online.githuboy.lagou.course.task;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.constants.ResourceType;

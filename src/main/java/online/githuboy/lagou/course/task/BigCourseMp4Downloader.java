@@ -57,7 +57,7 @@ public class BigCourseMp4Downloader extends AbstractRetryTask implements NamedTa
                     }
 
                     @Override
-                    public void progress(long l) {
+                    public void progress(long progressSize, long totalSize) {
                     }
 
                     @Override

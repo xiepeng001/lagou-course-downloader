@@ -1,12 +1,7 @@
 package online.githuboy.lagou.course.decrypt.alibaba;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.parser.DefaultJSONParser;
-import com.alibaba.fastjson.parser.JSONToken;
-import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
+import com.alibaba.fastjson2.JSON;
 import lombok.Data;
-
-import java.lang.reflect.Type;
 
 /**
  * @author suchu
@@ -34,27 +29,6 @@ public class PlayAuth {
         private String MediaId;
         private String PlayDomain;
         private String Signature;
-
-        static class AuthInfoSerializer {
-
-        }
-
-        static class AuthInfoDeserializer implements ObjectDeserializer {
-            @Override
-            public <T> T deserialze(DefaultJSONParser defaultJSONParser, Type type, Object o) {
-                String strVal = defaultJSONParser.getLexer().stringVal();
-                return (T) parseAuthInfo(strVal);
-            }
-
-            @Override
-            public int getFastMatchToken() {
-                return JSONToken.LITERAL_STRING;
-            }
-
-            private static AuthInfo parseAuthInfo(String text) {
-                return JSON.parseObject(text, PlayAuth.AuthInfo.class);
-            }
-        }
     }
 
     @Data

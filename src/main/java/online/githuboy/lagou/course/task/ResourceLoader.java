@@ -61,7 +61,7 @@ public class ResourceLoader implements Runnable, NamedTask, MediaLoader {
                         }
 
                         @Override
-                        public void progress(long l) {
+                        public void progress(long progressSize, long totalSize) {
                         }
 
                         @Override

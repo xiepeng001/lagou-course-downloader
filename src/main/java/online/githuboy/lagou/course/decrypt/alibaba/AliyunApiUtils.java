@@ -2,7 +2,9 @@ package online.githuboy.lagou.course.decrypt.alibaba;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import lombok.SneakyThrows;
 
 import javax.crypto.Mac;
@@ -32,7 +34,7 @@ public class AliyunApiUtils {
         } catch (Exception e) {
             return json;
         }
-        return JSONObject.toJSONString(jsonObject, true);
+        return JSON.toJSONString(jsonObject, JSONWriter.Feature.PrettyFormat);
     }
 
     public static String getPlayInfoRequestUrl(String aliPlayAuth, String fileId) {

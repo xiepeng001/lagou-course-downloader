@@ -1,7 +1,7 @@
-﻿package online.githuboy.lagou.course.support;
+package online.githuboy.lagou.course.support;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.constants.RespCode;
