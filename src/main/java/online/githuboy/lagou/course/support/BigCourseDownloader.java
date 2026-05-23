@@ -294,7 +294,13 @@ public class BigCourseDownloader {
                                             log.info("Skip lesson by name: {}", lessonName);
                                             continue;
                                         }
-                                        if (ResourceType.MEDIA.equals(lessonInfoVo.getType()) || ResourceType.RESOURCE.equals(lessonInfoVo.getType())) {
+                                        // Skip non-video lessons: 开班典礼 etc.
+                                        if (lessonName != null && (lessonName.contains("开班典礼") || lessonName.contains("開班典禮"))) {
+                                            log.info("Skip non-video lesson by name: {}", lessonName);
+                                            continue;
+                                        }
+                                        // Only download MEDIA (video) type; skip RESOURCE (资料/课件), CLASSWORK, TEST
+                                        if (ResourceType.MEDIA.equals(lessonInfoVo.getType())) {
                                             String lessonParentPath = this.savePath + File.separator + topPathName + File.separator + modulePathName + File.separator + subModulePathName;
                                             String videoName = (i + 1) + "_" + lessonInfoVo.getLessonId() + "_" + lessonName;
                                             bigCourseLessonDtoList.add(new BigCourseLessonDto(this.courseId, stageId.toString(), weekId.toString(),
