@@ -156,7 +156,6 @@ public class CourseService {
         List<LessonItem> items = new ArrayList<>();
         try {
             String savePath = ConfigUtil.readValue("mp4_xunlianying_dir");
-            BigCourseProgressStore.init(savePath);
 
             com.alibaba.fastjson2.JSONObject outlineResp = com.alibaba.fastjson2.JSONObject.parseObject(
                     HttpAPI.getBigCourseOutline(courseId));
@@ -167,12 +166,13 @@ public class CourseService {
             List<CourseStageVo> stages = stageVos.toJavaList(CourseStageVo.class);
 
             for (CourseStageVo stage : stages) {
-                // 阶段作为分组头 (level 0)
+                // 阶段 (level 0) — 对应目录: savePath/stageId_stageName/
+                String stageDirName = stage.getStageId() + "_" + stage.getStageName();
                 LessonItem stageItem = new LessonItem();
                 stageItem.setLessonId("");
                 stageItem.setLessonName(stage.getStageName());
                 stageItem.setLevel(0);
-                stageItem.setGroupPath(stage.getStageName());
+                stageItem.setGroupPath(stageDirName);
                 items.add(stageItem);
 
                 String stageWeeksResp = HttpAPI.getStageWeeks(courseId, stage.getStageId().toString());
@@ -183,12 +183,13 @@ public class CourseService {
                 List<StageModuleVo> modules = moduleArray.toJavaList(StageModuleVo.class);
 
                 for (StageModuleVo module : modules) {
-                    // 模块作为子分组头 (level 1)
+                    // 模块/周 (level 1) — 对应目录: .../stageDir/weekId_weekTag_weekName/
+                    String moduleDirName = module.getWeekId() + "_" + module.getWeekTag() + "_" + module.getWeekName();
                     LessonItem moduleItem = new LessonItem();
                     moduleItem.setLessonId("");
                     moduleItem.setLessonName(module.getWeekTag() + " " + module.getWeekName());
                     moduleItem.setLevel(1);
-                    moduleItem.setGroupPath(stage.getStageName() + " / " + module.getWeekName());
+                    moduleItem.setGroupPath(stageDirName + "/" + moduleDirName);
                     items.add(moduleItem);
 
                     String weekResp = HttpAPI.getWeekLessons(courseId, module.getWeekId().toString());
@@ -201,18 +202,43 @@ public class CourseService {
                     List<CourseDayInfoVo> days = dayArray.toJavaList(CourseDayInfoVo.class);
 
                     for (CourseDayInfoVo day : days) {
+                        // 天 (level 2) — 对应目录: .../moduleDir/dayId_dayName/
+                        String dayDirName = day.getDayId() + "_" + day.getDayName();
+                        LessonItem dayItem = new LessonItem();
+                        dayItem.setLessonId("");
+                        dayItem.setLessonName(day.getDayName());
+                        dayItem.setLevel(2);
+                        dayItem.setGroupPath(stageDirName + "/" + moduleDirName + "/" + dayDirName);
+                        items.add(dayItem);
+
                         if (day.getLessonInfoVos() == null) continue;
-                        for (LessonInfoVo lesson : day.getLessonInfoVos()) {
+                        for (int i = 0; i < day.getLessonInfoVos().size(); i++) {
+                            LessonInfoVo lesson = day.getLessonInfoVos().get(i);
                             if (lesson == null) continue;
+
+                            String lessonParentPath = savePath + File.separator + stageDirName
+                                    + File.separator + moduleDirName + File.separator + dayDirName;
+                            String videoName = (i + 1) + "_" + lesson.getLessonId() + "_" + lesson.getLessonName();
+
                             LessonItem item = new LessonItem();
                             item.setLessonId(lesson.getLessonId().toString());
                             item.setLessonName(lesson.getLessonName());
-                            item.setLevel(2);
-                            item.setGroupPath(stage.getStageName() + " / " + module.getWeekName());
-                            item.setType(ResourceType.MEDIA.equals(lesson.getType()) ? "视频" :
-                                    ResourceType.RESOURCE.equals(lesson.getType()) ? "资料" : "—");
-                            item.setDownloaded(BigCourseProgressStore.isCompleted(
-                                    lesson.getLessonId().toString(), lesson.getType()));
+                            item.setLevel(3);
+                            item.setGroupPath(stageDirName + "/" + moduleDirName + "/" + dayDirName);
+
+                            if (ResourceType.MEDIA.equals(lesson.getType())) {
+                                item.setType("视频");
+                                String mp4Path = lessonParentPath + File.separator + videoName + ".mp4";
+                                String mp4TempPath = lessonParentPath + File.separator + videoName + ".!mp4";
+                                item.setDownloaded(FileUtil.exist(mp4Path) || FileUtil.exist(mp4TempPath));
+                            } else if (ResourceType.RESOURCE.equals(lesson.getType())) {
+                                item.setType("资料");
+                                // 资料文件名不确定，检查目录下是否有文件包含 lessonId
+                                item.setDownloaded(checkResourceDownloaded(lessonParentPath, lesson.getLessonId().toString()));
+                            } else {
+                                item.setType("—");
+                                item.setDownloaded(false);
+                            }
                             items.add(item);
                         }
                     }
@@ -222,5 +248,12 @@ public class CourseService {
             log.error("获取训练营课时失败: {}", e.getMessage());
         }
         return items;
+    }
+
+    private boolean checkResourceDownloaded(String parentPath, String lessonId) {
+        File dir = new File(parentPath);
+        if (!dir.exists()) return false;
+        return FileUtil.loopFiles(dir).stream()
+                .anyMatch(f -> f.getName().contains(lessonId));
     }
 }
