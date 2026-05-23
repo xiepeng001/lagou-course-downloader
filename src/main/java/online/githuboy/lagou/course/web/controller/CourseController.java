@@ -56,10 +56,11 @@ public class CourseController {
 
     @PostMapping("/api/download")
     @ResponseBody
-    public String startDownload(@RequestBody Map<String, List<String>> payload) {
-        List<String> courseIds = payload.getOrDefault("courseIds", List.of());
-        List<String> lessonIds = payload.getOrDefault("lessonIds", List.of());
-        downloadService.submitDownload(courseIds, lessonIds);
+    public String startDownload(@RequestBody Map<String, Object> payload) {
+        List<String> courseIds = (List<String>) payload.getOrDefault("courseIds", List.of());
+        List<String> lessonIds = (List<String>) payload.getOrDefault("lessonIds", List.of());
+        Map<String, String> courseTypeMap = (Map<String, String>) payload.getOrDefault("courseTypes", Map.of());
+        downloadService.submitDownload(courseIds, lessonIds, courseTypeMap);
         return "ok";
     }
 

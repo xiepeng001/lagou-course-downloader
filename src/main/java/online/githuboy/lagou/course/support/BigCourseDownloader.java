@@ -1,8 +1,10 @@
 package online.githuboy.lagou.course.support;
 
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.githuboy.lagou.course.constants.RespCode;
 import online.githuboy.lagou.course.constants.ResourceType;
@@ -53,6 +55,13 @@ public class BigCourseDownloader {
     @Getter
     private final String savePath;
 
+    /** Filter: only download lessons whose ID is in this list. Empty means all. */
+    @Setter
+    private List<String> lessonFilter = List.of();
+
+    @Setter
+    private Downloader.ProgressCallback progressCallback;
+
     private final String courseOutlineUrl;
     private CountDownLatch latch;
     private volatile List<MediaLoader> mediaLoaders;
@@ -78,7 +87,6 @@ public class BigCourseDownloader {
 
     public void start() throws IOException, InterruptedException {
         this.startTime = System.currentTimeMillis();
-        BigCourseProgressStore.init(this.savePath);
         log.info("Start downloader. courseId:{}, savePath:{}, httpTimeoutMs:{}, apiRetryCount:{}",
                 this.courseId,
                 this.savePath,
@@ -240,7 +248,7 @@ public class BigCourseDownloader {
 
     private List<BigCourseLessonDto> parseBigCourseLessonInfo() {
         List<BigCourseLessonDto> bigCourseLessonDtoList = new ArrayList<>();
-        boolean debugFilter = DEBUG_LESSON_ID != null && !DEBUG_LESSON_ID.isEmpty();
+        boolean filterActive = !lessonFilter.isEmpty();
         if (!this.courseStageVoList.isEmpty()) {
             // Level 1: stage
             for (CourseStageVo courseStageVo : this.courseStageVoList) {
@@ -279,10 +287,7 @@ public class BigCourseDownloader {
                                         }
                                         String lessonName = lessonInfoVo.getLessonName();
                                         String lessonIdStr = String.valueOf(lessonInfoVo.getLessonId());
-                                        if (debugFilter) {
-                                            log.info("Debug lesson candidate: weekId:{}, dayId:{}, lessonId:{}, name:{}", weekId, dayId, lessonIdStr, lessonName);
-                                        }
-                                        if (debugFilter && !DEBUG_LESSON_ID.equals(lessonIdStr)) {
+                                        if (filterActive && !lessonFilter.contains(lessonIdStr)) {
                                             continue;
                                         }
                                         if (lessonName != null && lessonName.contains("????")) {
@@ -308,34 +313,45 @@ public class BigCourseDownloader {
         return bigCourseLessonDtoList;
     }
 
+    /** Check if a lesson's file already exists on disk, same logic as CourseService. */
+    private boolean isLessonDownloaded(BigCourseLessonDto lesson) {
+        String parentPath = lesson.getPathName();
+        String videoName = lesson.getVideoName();
+        if (ResourceType.MEDIA.equals(lesson.getType())) {
+            String mp4Path = parentPath + File.separator + videoName + ".mp4";
+            String mp4TempPath = parentPath + File.separator + videoName + ".!mp4";
+            return FileUtil.exist(mp4Path) || FileUtil.exist(mp4TempPath);
+        } else if (ResourceType.RESOURCE.equals(lesson.getType())) {
+            File dir = new File(parentPath);
+            if (!dir.exists()) return false;
+            return FileUtil.loopFiles(dir).stream()
+                    .anyMatch(f -> f.getName().contains(lesson.getLessonId()));
+        }
+        return false;
+    }
+
     private int parseVideoInfo(List<BigCourseLessonDto> bigCourseLessonDtoList) {
         AtomicInteger videoSize = new AtomicInteger();
         this.latch = new CountDownLatch(bigCourseLessonDtoList.size());
         this.mediaLoaders = new Vector<>();
 
         bigCourseLessonDtoList.forEach(lessonInfo -> {
-            if (BigCourseProgressStore.isCompleted(lessonInfo.getLessonId(), lessonInfo.getType())) {
-                log.info("Skip completed by progress record: lessonId={}, name={}, type={}",
+            if (isLessonDownloaded(lessonInfo)) {
+                log.info("Skip already downloaded: lessonId={}, name={}, type={}",
                         lessonInfo.getLessonId(), lessonInfo.getLessonName(), lessonInfo.getType());
                 latch.countDown();
                 ExecutorService.COUNTER.incrementAndGet();
                 return;
             }
 
-            if (!Mp4History.contains(lessonInfo.getLessonId(), lessonInfo.getLessonName(), courseId, null)) {
-                BigCourseVideoInfoLoader videoInfoLoader = new BigCourseVideoInfoLoader(lessonInfo.getVideoName(), lessonInfo.getCourseId(), lessonInfo.getWeekId(), lessonInfo.getDayId(), lessonInfo.getLessonId());
-                videoInfoLoader.setMediaLoaders(mediaLoaders);
-                videoInfoLoader.setBasePath(lessonInfo.getPathName());
-                videoInfoLoader.setLatch(this.latch);
-                videoInfoLoader.setType(lessonInfo.getType());
-                videoInfoLoader.setResourceUrl(lessonInfo.getResourceUrl());
-                ExecutorService.execute(videoInfoLoader);
-                videoSize.getAndIncrement();
-            } else {
-                log.info("Course already downloaded, skip: {}", lessonInfo.getVideoName());
-                latch.countDown();
-                ExecutorService.COUNTER.incrementAndGet();
-            }
+            BigCourseVideoInfoLoader videoInfoLoader = new BigCourseVideoInfoLoader(lessonInfo.getVideoName(), lessonInfo.getCourseId(), lessonInfo.getWeekId(), lessonInfo.getDayId(), lessonInfo.getLessonId());
+            videoInfoLoader.setMediaLoaders(mediaLoaders);
+            videoInfoLoader.setBasePath(lessonInfo.getPathName());
+            videoInfoLoader.setLatch(this.latch);
+            videoInfoLoader.setType(lessonInfo.getType());
+            videoInfoLoader.setResourceUrl(lessonInfo.getResourceUrl());
+            ExecutorService.execute(videoInfoLoader);
+            videoSize.getAndIncrement();
         });
         return videoSize.intValue();
     }
@@ -365,6 +381,11 @@ public class BigCourseDownloader {
         }
 
         all.await();
+
+        if (progressCallback != null) {
+            progressCallback.onProgress(courseId, this.mediaLoaders.size(), total);
+        }
+
         long end = System.currentTimeMillis();
         log.info("All media processed in {} s", (end - startTime) / 1000);
         log.info("Media output directory: {}", this.savePath);

@@ -223,10 +223,14 @@ async function startDownload() {
 
     if (allCourseIds.length === 0) { alert('请先选择课程或课时'); return; }
 
+    // Build courseId -> courseType map
+    const courseTypes = {};
+    courses.forEach(c => { courseTypes[c.courseId] = c.type; });
+
     await fetch('/api/download', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({courseIds: allCourseIds, lessonIds: lessonIds})
+        body: JSON.stringify({courseIds: allCourseIds, lessonIds: lessonIds, courseTypes: courseTypes})
     });
 
     document.getElementById('progressPanel').style.display = 'block';
