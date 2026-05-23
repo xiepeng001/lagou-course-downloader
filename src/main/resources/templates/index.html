@@ -12,11 +12,6 @@
 
     <div class="config-panel">
         <div class="form-row">
-            <label>Cookie:</label>
-            <input type="text" id="cookie" th:value="${cookie}" placeholder="从浏览器复制 Cookie 粘贴到这里">
-            <button onclick="saveConfig()">保存</button>
-        </div>
-        <div class="form-row">
             <label>下载目录:</label>
             <input type="text" id="mp4Dir" th:value="${mp4Dir}" style="width:400px">
         </div>
@@ -27,6 +22,7 @@
                 <option value="1" th:selected="${downloadType == '1'}">仅文章</option>
                 <option value="3" th:selected="${downloadType == '3'}">视频+文章</option>
             </select>
+            <button onclick="saveConfig()">保存配置</button>
             <button onclick="loadCourses()">刷新课程列表</button>
         </div>
     </div>

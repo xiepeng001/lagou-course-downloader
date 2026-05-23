@@ -1,11 +1,10 @@
 let courses = [];
 
 async function saveConfig() {
-    const cookie = document.getElementById('cookie').value;
     const mp4Dir = document.getElementById('mp4Dir').value;
     const downloadType = document.getElementById('downloadType').value;
 
-    const params = new URLSearchParams({cookie, mp4Dir, downloadType});
+    const params = new URLSearchParams({mp4Dir, downloadType});
     const res = await fetch('/api/config', {method: 'POST', body: params});
     if (res.ok) alert('配置已保存');
 }

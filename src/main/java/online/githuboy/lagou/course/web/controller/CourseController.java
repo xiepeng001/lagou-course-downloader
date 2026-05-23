@@ -3,7 +3,6 @@ package online.githuboy.lagou.course.web.controller;
 import lombok.RequiredArgsConstructor;
 import online.githuboy.lagou.course.service.CourseService;
 import online.githuboy.lagou.course.service.DownloadService;
-import online.githuboy.lagou.course.support.CookieStore;
 import online.githuboy.lagou.course.utils.ConfigUtil;
 import online.githuboy.lagou.course.web.dto.CourseListItem;
 import online.githuboy.lagou.course.web.dto.DownloadProgress;
@@ -26,7 +25,6 @@ public class CourseController {
 
     @GetMapping("/")
     public String index(Model model) {
-        model.addAttribute("cookie", CookieStore.getCookie());
         model.addAttribute("mp4Dir", ConfigUtil.readValue("mp4_dir"));
         model.addAttribute("downloadType", ConfigUtil.readValue("downloadType"));
         return "index";
@@ -34,11 +32,8 @@ public class CourseController {
 
     @PostMapping("/api/config")
     @ResponseBody
-    public String saveConfig(@RequestParam String cookie,
-                             @RequestParam String mp4Dir,
+    public String saveConfig(@RequestParam String mp4Dir,
                              @RequestParam(defaultValue = "3") String downloadType) {
-        CookieStore.setCookie(cookie);
-        ConfigUtil.setValue("cookie", cookie);
         ConfigUtil.setValue("mp4_dir", mp4Dir);
         ConfigUtil.setValue("downloadType", downloadType);
         return "ok";
