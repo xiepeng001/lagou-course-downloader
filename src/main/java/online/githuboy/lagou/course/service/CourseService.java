@@ -111,12 +111,22 @@ public class CourseService {
         String courseName = courseInfo.getCourseName();
 
         for (CourseInfo.Section section : courseInfo.getCourseSectionList()) {
+            // 章节作为分组头
+            LessonItem sectionItem = new LessonItem();
+            sectionItem.setLessonId("");
+            sectionItem.setLessonName(section.getSectionName());
+            sectionItem.setLevel(0);
+            sectionItem.setGroupPath(section.getSectionName());
+            items.add(sectionItem);
+
             if (section.getCourseLessons() == null) continue;
             for (CourseInfo.Lesson lesson : section.getCourseLessons()) {
                 LessonItem item = new LessonItem();
                 item.setLessonId(lesson.getId() + "");
                 item.setLessonName(lesson.getTheme());
                 item.setStatus("RELEASE".equals(lesson.getStatus()) ? "已发布" : "未发布");
+                item.setLevel(1);
+                item.setGroupPath(section.getSectionName());
 
                 boolean hasVideo = lesson.getVideoMediaDTO() != null && lesson.getVideoMediaDTO().getFileId() != null;
                 boolean hasText = lesson.getTextContent() != null || lesson.getTextUrl() != null;
@@ -157,6 +167,14 @@ public class CourseService {
             List<CourseStageVo> stages = stageVos.toJavaList(CourseStageVo.class);
 
             for (CourseStageVo stage : stages) {
+                // 阶段作为分组头 (level 0)
+                LessonItem stageItem = new LessonItem();
+                stageItem.setLessonId("");
+                stageItem.setLessonName(stage.getStageName());
+                stageItem.setLevel(0);
+                stageItem.setGroupPath(stage.getStageName());
+                items.add(stageItem);
+
                 String stageWeeksResp = HttpAPI.getStageWeeks(courseId, stage.getStageId().toString());
                 com.alibaba.fastjson2.JSONObject weeksJson = com.alibaba.fastjson2.JSONObject.parseObject(stageWeeksResp);
                 if (weeksJson.getInteger("state") != 1) continue;
@@ -165,6 +183,14 @@ public class CourseService {
                 List<StageModuleVo> modules = moduleArray.toJavaList(StageModuleVo.class);
 
                 for (StageModuleVo module : modules) {
+                    // 模块作为子分组头 (level 1)
+                    LessonItem moduleItem = new LessonItem();
+                    moduleItem.setLessonId("");
+                    moduleItem.setLessonName(module.getWeekTag() + " " + module.getWeekName());
+                    moduleItem.setLevel(1);
+                    moduleItem.setGroupPath(stage.getStageName() + " / " + module.getWeekName());
+                    items.add(moduleItem);
+
                     String weekResp = HttpAPI.getWeekLessons(courseId, module.getWeekId().toString());
                     com.alibaba.fastjson2.JSONObject weekJson = com.alibaba.fastjson2.JSONObject.parseObject(weekResp);
                     if (weekJson.getInteger("state") != 1) continue;
@@ -180,8 +206,9 @@ public class CourseService {
                             if (lesson == null) continue;
                             LessonItem item = new LessonItem();
                             item.setLessonId(lesson.getLessonId().toString());
-                            item.setLessonName(stage.getStageName() + " / " + module.getWeekName() + " / " + lesson.getLessonName());
-                            item.setStatus("—");
+                            item.setLessonName(lesson.getLessonName());
+                            item.setLevel(2);
+                            item.setGroupPath(stage.getStageName() + " / " + module.getWeekName());
                             item.setType(ResourceType.MEDIA.equals(lesson.getType()) ? "视频" :
                                     ResourceType.RESOURCE.equals(lesson.getType()) ? "资料" : "—");
                             item.setDownloaded(BigCourseProgressStore.isCompleted(

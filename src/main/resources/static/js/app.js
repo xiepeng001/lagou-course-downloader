@@ -62,13 +62,22 @@ async function toggleLessons(courseId, courseType, btn) {
         }
         container.innerHTML = `<div class="lesson-loaded">
             <table class="lesson-table">
-                <thead><tr><th>课时名称</th><th>类型</th><th>状态</th><th>已下载</th></tr></thead>
-                <tbody>${lessons.map(l => `<tr>
-                    <td>${l.lessonName}</td>
-                    <td>${l.type}</td>
-                    <td>${l.status}</td>
-                    <td>${l.downloaded ? '✓' : '—'}</td>
-                </tr>`).join('')}</tbody>
+                <thead><tr><th>名称</th><th>类型</th><th>状态</th><th>已下载</th></tr></thead>
+                <tbody>${lessons.map(l => {
+                    const isGroup = l.lessonId === '' || l.lessonId === null;
+                    const indent = l.level * 20;
+                    if (isGroup) {
+                        return `<tr class="lesson-group level-${l.level}">
+                            <td colspan="4" style="padding-left:${indent + 10}px">${l.lessonName}</td>
+                        </tr>`;
+                    }
+                    return `<tr>
+                        <td style="padding-left:${indent + 10}px">${l.lessonName}</td>
+                        <td>${l.type || '—'}</td>
+                        <td>${l.status || '—'}</td>
+                        <td>${l.downloaded ? '✓' : '—'}</td>
+                    </tr>`;
+                }).join('')}</tbody>
             </table>
         </div>`;
     } catch (e) {

@@ -37,6 +37,9 @@ td { font-size: 14px; }
 .lesson-table th { background: #f5f7fa; padding: 6px 10px; font-size: 12px; }
 .lesson-table td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; }
 .lesson-loading { padding: 10px; color: #999; font-size: 13px; }
+.lesson-group td { font-weight: 600; background: #f5f7fa !important; color: #333; }
+.lesson-group.level-0 td { font-size: 13px; }
+.lesson-group.level-1 td { font-size: 12px; font-weight: 500; color: #555; }
 
 .progress-item { margin-bottom: 12px; }
 .progress-bar-bg { background: #f0f0f0; border-radius: 4px; height: 20px; overflow: hidden; }
