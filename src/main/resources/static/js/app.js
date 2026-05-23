@@ -82,18 +82,28 @@ function buildTree(lessons) {
             groupPath: l.groupPath,
             isGroup: isGroup,
             children: [],
-            checked: false
         };
         const parentKey = l.groupPath || '';
         const parent = pathMap[parentKey] || root;
         parent.children.push(node);
-        // Groups become parents for the next level
         if (isGroup) {
             const key = l.groupPath ? l.groupPath + '/' + l.lessonName : l.lessonName;
             pathMap[key] = node;
         }
     }
     return root;
+}
+
+// Count downloaded leaves under a node
+function countLeaves(node) {
+    if (!node.isGroup) return {total: 1, downloaded: node.downloaded ? 1 : 0};
+    let total = 0, downloaded = 0;
+    for (const child of node.children) {
+        const c = countLeaves(child);
+        total += c.total;
+        downloaded += c.downloaded;
+    }
+    return {total, downloaded};
 }
 
 function renderTree(node, courseId) {
@@ -108,15 +118,19 @@ function renderTree(node, courseId) {
 function renderTreeNode(node, courseId) {
     const indent = node.level * 20;
     const nodeId = node.isGroup ? 'group-' + courseId + '-' + node.level + '-' + Math.random().toString(36).substr(2, 6) : 'lesson-' + courseId + '-' + node.id;
-    node._nodeId = nodeId;
 
     if (node.isGroup) {
         const hasChildren = node.children.length > 0;
         const expandBtn = hasChildren ? `<span class="tree-toggle" onclick="treeToggle(this)">&#9660;</span>` : '<span class="tree-toggle-placeholder"></span>';
+        const cnt = countLeaves(node);
+        const progressText = cnt.total > 0 ? `<span class="tree-group-progress">${cnt.downloaded}/${cnt.total} 已下载</span>` : '';
         let html = `<div class="tree-node tree-group level-${node.level}" style="padding-left:${indent}px">
             ${expandBtn}
             <input type="checkbox" class="tree-check" id="${nodeId}" data-node-id="${nodeId}" onchange="treeCheck(this)">
-            <label for="${nodeId}"><span class="tree-group-name">${node.name}</span></label>
+            <label for="${nodeId}">
+                <span class="tree-group-name">${node.name}</span>
+                ${progressText}
+            </label>
         </div>`;
         if (hasChildren) {
             html += `<div class="tree-children">`;
@@ -127,12 +141,14 @@ function renderTreeNode(node, courseId) {
         }
         return html;
     } else {
+        const statusIcon = node.downloaded ? '✓ 已下载' : '未下载';
+        const statusClass = node.downloaded ? 'dl-done' : 'dl-missing';
         return `<div class="tree-node tree-leaf level-${node.level}" style="padding-left:${indent + 22}px">
             <input type="checkbox" class="tree-check leaf-check" id="${nodeId}" data-lesson-id="${node.id}" data-course-id="${courseId}" ${node.downloaded ? 'data-downloaded="true"' : ''} onchange="leafCheck(this)">
             <label for="${nodeId}">
                 <span class="tree-leaf-name">${node.name}</span>
                 <span class="tree-leaf-type">${node.type || ''}</span>
-                <span class="tree-leaf-status">${node.downloaded ? '✓' : ''}</span>
+                <span class="tree-leaf-status ${statusClass}">${statusIcon}</span>
             </label>
         </div>`;
     }
@@ -156,7 +172,6 @@ function treeCheck(cb) {
     const groupNode = cb.closest('.tree-node');
     const children = groupNode.nextElementSibling;
     if (!children || !children.classList.contains('tree-children')) return;
-    // Check all checkboxes inside (both groups and leaves)
     children.querySelectorAll('.tree-check').forEach(lc => {
         lc.checked = cb.checked;
         lc.dispatchEvent(new Event('change', {bubbles: false}));
@@ -200,12 +215,9 @@ function selectUndownloaded() {
 }
 
 async function startDownload() {
-    // Collect from course-level checkboxes
     const courseIds = [...document.querySelectorAll('.course-check:checked')].map(cb => cb.value);
-    // Collect from lesson-level checkboxes with their courseId
     const leafChecks = document.querySelectorAll('.leaf-check:checked');
     const lessonIds = [...leafChecks].map(cb => cb.dataset.lessonId);
-    // Auto-collect courseIds from selected lessons
     const lessonCourseIds = [...leafChecks].map(cb => cb.dataset.courseId);
     const allCourseIds = [...new Set([...courseIds, ...lessonCourseIds])];
 
