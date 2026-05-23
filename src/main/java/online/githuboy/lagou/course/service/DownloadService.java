@@ -21,7 +21,7 @@ public class DownloadService {
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private final ConcurrentMap<String, DownloadProgress> progressMap = new ConcurrentHashMap<>();
 
-    public void submitDownload(List<String> courseIds) {
+    public void submitDownload(List<String> courseIds, List<String> lessonIds) {
         String savePath = ConfigUtil.readValue("mp4_dir");
         DownloadType downloadType = DownloadType.loadByCode(
                 Integer.valueOf(ConfigUtil.readValue("downloadType")));
@@ -41,6 +41,9 @@ public class DownloadService {
                         progress.setCompleted(completed);
                         progress.setTotal(total);
                     });
+                    if (!lessonIds.isEmpty()) {
+                        downloader.setDebugFilter(lesson -> lessonIds.contains(lesson.getId() + ""));
+                    }
                     downloader.start();
                     progress.setState("完成");
                 } catch (Exception e) {

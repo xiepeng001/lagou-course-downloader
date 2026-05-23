@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 @Controller
@@ -55,8 +56,10 @@ public class CourseController {
 
     @PostMapping("/api/download")
     @ResponseBody
-    public String startDownload(@RequestBody List<String> courseIds) {
-        downloadService.submitDownload(courseIds);
+    public String startDownload(@RequestBody Map<String, List<String>> payload) {
+        List<String> courseIds = payload.getOrDefault("courseIds", List.of());
+        List<String> lessonIds = payload.getOrDefault("lessonIds", List.of());
+        downloadService.submitDownload(courseIds, lessonIds);
         return "ok";
     }
 
